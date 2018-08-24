@@ -118,7 +118,7 @@ def install(app, client, schema):
     print(result)
     while True:
             print('would you like to install another app?:')
-            list_apps(app, client, schema)
+            list_apps(None, client, schema)
             yano = input('[ya\\\\no]: ')
             if 'y' in yano:
                 continue
