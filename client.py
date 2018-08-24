@@ -1,3 +1,4 @@
+import os
 import sys
 import json
 import shutil
@@ -80,21 +81,30 @@ def login(opt, client, schema):
     return {'client':client, 'schema':schema}
 
 def list_apps(opt, client, schema):
-    try:
-        response = client.get('http://fas.42king.com:8197/api/apps', format='json')
-        if response:
-            try:
-                appList = json.loads(response['apps'])
-                print('Apps:')
-                for app in appList:
-                    print('\t' + app['fields']['name'])
-            except:
-                print('apps could not be displayed')
-                return False
-    except Exception as e:
-        print(e)
-        print('not authorized')
-        return False
+    print(opt)
+    if opt == 'installed':
+        for file in next(os.walk('./apps/'))[1]:
+            print(file)
+        return True
+    elif opt == 'all' or not opt:
+        try:
+            response = client.get('http://fas.42king.com:8197/api/apps', format='json')
+            if response:
+                try:
+                    appList = json.loads(response['apps'])
+                    print('Apps:')
+                    for app in appList:
+                        print('\t' + app['fields']['name'])
+                except:
+                    print('apps could not be displayed')
+                    return False
+        except Exception as e:
+            print(e)
+            print('not authorized')
+            return False
+    else:
+        print(opt + ' is an invalid option, try \'list installed\' or \'list all\'')
+        return True
 
 def install(app, client, schema):
     print(schema)
