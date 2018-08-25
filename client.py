@@ -4,7 +4,10 @@ import shutil
 import coreapi
 import getpass
 import zipfile
+import requests
 from coreapi import codecs, Client
+
+SESSION_TOKEN=None
 
 def quit(opt, client, schema):
     return 'exit'
@@ -18,6 +21,10 @@ def display(opt, client, schema):
         help - list options\n\
         quit - exit client')
     return True
+
+def formHeader():
+    global SESSION_TOKEN
+    return {'Authorization': 'Token {}'.format(SESSION_TOKEN)}
 
 def register(opt, client, schema):
     while True:
@@ -54,7 +61,6 @@ def register(opt, client, schema):
     return True
 
 def login(opt, client, schema):
-    
     while True:
         username = input('username:')
         password = getpass.getpass('password:')
@@ -67,38 +73,49 @@ def login(opt, client, schema):
     try:
         action = ['login', 'create']
         result = client.action(schema, action, params)
-        print(result)
         action = ['token', 'create']
         result = client.action(schema, action, params)
-        print(result)
+        print(formHeader())
     except Exception as e:
         print(e)
         print('validation failed')
         return False
+    global SESSION_TOKEN
+    SESSION_TOKEN = result['token']
+    print(SESSION_TOKEN, formHeader())
     auth = coreapi.auth.TokenAuthentication(
         scheme='OAUTH',
-        token=result['token']
+        token=SESSION_TOKEN
     )
     client = coreapi.Client(auth=auth)
     print(username + ' logged in')
-    return {'client':client, 'schema':schema}
+    return True#{'client':client}
 
 def list_apps(opt, client, schema):
+#    print(client.auth)
     if opt == 'installed':
         for file in next(os.walk('./apps/'))[1]:
             print(file)
         return True
     elif opt == 'all' or not opt:
         try:
-            response = client.get('http://fas.42king.com:8197/api/apps', format='json')
-            print(response)
-            if response:
+            print(formHeader())
+            response = requests.request(
+                            method='GET',
+                            url='http://fas.42king.com:8197/api/apps/',
+                            headers=formHeader()
+                        )
+            appList = json.loads(response.content)
+            appList = json.loads(appList['apps'])
+#            for key in appList: print (key)
+            if appList:
                 try:
-                    appList = json.loads(response['apps'])
                     print('Apps:')
                     for app in appList:
+#                        print(app)
                         print('\t' + app['fields']['name'])
-                except:
+                except Exception as e:
+                    print(e)
                     print('apps could not be displayed')
                     return False
         except Exception as e:
@@ -160,17 +177,21 @@ def run_client():
 
 def test_client_connection():
     client = coreapi.Client()
-    
+    schema = client.get('http://fas.42king.com:8197/api/schema/')
     action = ['token', 'create']
     params = {'username': "test", 'password': 'test'}
     result = client.action(schema, action, params)
     
+    action = ['login', 'create']
+    print(result)
     auth = coreapi.auth.TokenAuthentication(
         scheme='OAUTH',
         token=result['token']
     )
-    client = coreapi.Client(auth=auth)
-    print(client.get('http://fas.42king.com:8197/api/apps'))
+    result = client.action(schema, action, params)
+    print(result)
+    clent = coreapi.Client(auth=auth)
+    print(client.get('http://fas.42king.com:8197/api/apps/'))
 
 
 func = {
@@ -212,5 +233,5 @@ if __name__ == "__main__":
         print_exc()
         handle(err)
     '''
-    
+#    test_client_connection()
     run_client()
