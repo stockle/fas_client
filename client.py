@@ -1,4 +1,3 @@
-import os
 import sys
 import json
 import shutil
@@ -55,7 +54,6 @@ def register(opt, client, schema):
     return True
 
 def login(opt, client, schema):
-    action = ['token', 'create']
     
     while True:
         username = input('username:')
@@ -67,7 +65,12 @@ def login(opt, client, schema):
             continue
     params = {'username': username, 'password': password}
     try:
+        action = ['login', 'create']
         result = client.action(schema, action, params)
+        print(result)
+        action = ['token', 'create']
+        result = client.action(schema, action, params)
+        print(result)
     except Exception as e:
         print(e)
         print('validation failed')
@@ -81,7 +84,6 @@ def login(opt, client, schema):
     return {'client':client, 'schema':schema}
 
 def list_apps(opt, client, schema):
-    print(opt)
     if opt == 'installed':
         for file in next(os.walk('./apps/'))[1]:
             print(file)
@@ -89,6 +91,7 @@ def list_apps(opt, client, schema):
     elif opt == 'all' or not opt:
         try:
             response = client.get('http://fas.42king.com:8197/api/apps', format='json')
+            print(response)
             if response:
                 try:
                     appList = json.loads(response['apps'])
